@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<ruleset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    name="site-monitor-hub"
+    xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/PHPCSStandards/PHP_CodeSniffer/master/phpcs.xsd">
+
+    <description>PHPCS configuration for site-monitor-hub.</description>
+
+    <file>./src</file>
+    <file>./public</file>
+    <file>./bin</file>
+
+    <exclude-pattern>vendor/*</exclude-pattern>
+
+    <arg name="extensions" value="php"/>
+
+    <rule ref="Apermo">
+        <!-- This project runs outside WordPress — exclude WP-specific rules. -->
+        <exclude name="WordPress.Security.EscapeOutput"/>
+        <exclude name="WordPress.WP.I18n"/>
+        <exclude name="WordPress.Security.NonceVerification"/>
+        <exclude name="WordPress.WP.AlternativeFunctions"/>
+        <exclude name="WordPress.NamingConventions.PrefixAllGlobals"/>
+        <exclude name="WordPress.WP.GlobalVariablesOverride"/>
+        <exclude name="WordPressVIPMinimum.Functions.RestrictedFunctions"/>
+        <exclude name="WordPressVIPMinimum.Variables.RestrictedVariables"/>
+        <exclude name="WordPressVIPMinimum.Variables.ServerVariables"/>
+        <exclude name="WordPressVIPMinimum.Performance.FetchingRemoteData"/>
+        <exclude name="WordPressVIPMinimum.Security"/>
+        <exclude name="WordPress.DateTime.RestrictedFunctions"/>
+        <exclude name="WordPress.Security.ValidatedSanitizedInput"/>
+        <exclude name="WordPress.NamingConventions.ValidVariableName"/>
+        <exclude name="WordPress.NamingConventions.ValidFunctionName"/>
+        <exclude name="Universal.NamingConventions.NoReservedKeywordParameterNames"/>
+        <exclude name="WordPress.PHP.DiscouragedPHPFunctions"/>
+        <exclude name="WordPress.DB"/>
+        <exclude name="Apermo.WordPress.NoHardcodedTableNames"/>
+    </rule>
+</ruleset>

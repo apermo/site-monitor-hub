@@ -1,0 +1,18 @@
+# Dependencies
+vendor/
+
+# Environment
+.env
+
+# Database
+data/*.sqlite
+
+# Build artifacts
+.phpunit.cache/
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store

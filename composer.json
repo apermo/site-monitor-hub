@@ -1,0 +1,52 @@
+{
+	"name": "apermo/site-monitor-hub",
+	"description": "Standalone PHP API that receives, stores, and serves WordPress site health data.",
+	"keywords": [
+		"wordpress",
+		"site monitoring",
+		"health check",
+		"plugin updates",
+		"theme updates",
+		"site management",
+		"dashboard api"
+	],
+	"homepage": "https://github.com/apermo/site-monitor-hub/",
+	"license": "MIT",
+	"authors": [
+		{
+			"name": "Christoph Daum",
+			"homepage": "https://christoph-daum.de/",
+			"role": "Developer"
+		}
+	],
+	"require": {
+		"php": ">=8.1",
+		"ext-json": "*",
+		"ext-pdo": "*",
+		"ext-pdo_sqlite": "*"
+	},
+	"autoload": {
+		"psr-4": {
+			"Apermo\\SiteMonitorHub\\": "src/"
+		}
+	},
+	"autoload-dev": {
+		"psr-4": {
+			"Apermo\\SiteMonitorHub\\Tests\\": "tests/"
+		}
+	},
+	"require-dev": {
+		"apermo/apermo-coding-standards": "^2.0",
+		"phpunit/phpunit": "^11.0"
+	},
+	"scripts": {
+		"cs": "phpcs",
+		"cs:fix": "phpcbf",
+		"test": "phpunit"
+	},
+	"config": {
+		"allow-plugins": {
+			"dealerdirect/phpcodesniffer-composer-installer": true
+		}
+	}
+}
