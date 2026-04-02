@@ -1,7 +1,12 @@
 # Site Bookkeeper Hub
 
-Standalone PHP API that receives, stores, and serves WordPress site health data. Sites push their status via
-`POST /report`, and clients (dashboards, apps) read aggregated data through authenticated GET endpoints.
+A monitoring tool for your WordPress Sites — Central API
+
+[![License: GPL v2+](https://img.shields.io/badge/License-GPLv2+-blue.svg)](LICENSE)
+
+Standalone PHP/SQLite API that receives, stores, and serves WordPress site health data. Sites push their
+status via `POST /report`, and clients (dashboards, apps) read aggregated data through authenticated GET
+endpoints. Supports multisite networks as first-class entities.
 
 ## Requirements
 
@@ -18,45 +23,69 @@ composer install
 cp .env.example .env
 ```
 
+Point your web server (nginx, Caddy, Apache) at `public/index.php` as the single entry point.
+
 ## Configuration
 
 Edit `.env` to customize:
 
-| Variable               | Default                  | Description                            |
-|------------------------|--------------------------|----------------------------------------|
-| `DATABASE_PATH`        | `./data/monitor.sqlite`  | Path to the SQLite database file       |
-| `STALE_THRESHOLD_HOURS`| `48`                     | Hours before a site is marked as stale |
+| Variable | Default | Description |
+|---|---|---|
+| `DATABASE_PATH` | `./data/monitor.sqlite` | Path to the SQLite database file |
+| `STALE_THRESHOLD_HOURS` | `48` | Hours before a site is marked as stale |
 
-## Usage
-
-### Register a site
+## Site Management
 
 ```bash
+# Register a single site (outputs a one-time bearer token)
 php bin/manage.php site:add https://example.tld --label="My Site"
+
+# List all registered sites
+php bin/manage.php site:list
+
+# Rotate a site's token
+php bin/manage.php site:rotate-token https://example.tld
+
+# Create a read-only client token (for dashboards / apps)
+php bin/manage.php client:add --label="dashboard"
 ```
 
-The command outputs a one-time bearer token. Configure the remote site to push reports using this token.
-
-### Add a client token
+## Network Management (Multisite)
 
 ```bash
-php bin/manage.php client:add --label="macos-app"
+# Register a multisite network (one token for all subsites)
+php bin/manage.php network:add https://network.example.tld --label="My Network"
+
+# List all networks
+php bin/manage.php network:list
+
+# Rotate a network token
+php bin/manage.php network:rotate-token https://network.example.tld
 ```
 
-### Point your web server at `public/`
-
-The single entry point is `public/index.php`. Configure your web server (Apache, nginx, Caddy) to route all
-requests to this file.
+Subsites auto-register on their first report when using a network token.
 
 ## API Endpoints
 
-| Method | Path           | Auth         | Description                     |
-|--------|----------------|--------------|---------------------------------|
-| POST   | `/report`      | Site token   | Push a site health report       |
-| GET    | `/sites`       | Client token | List all sites (summary)        |
-| GET    | `/sites/{id}`  | Client token | Full report for a single site   |
-| GET    | `/plugins`     | Client token | Cross-site plugin overview      |
-| GET    | `/themes`      | Client token | Cross-site theme overview       |
+### Site Reporting (Bearer: site or network token)
+
+| Method | Path | Description |
+|---|---|---|
+| POST | `/report` | Push a site health report (upsert) |
+| POST | `/network-report` | Push a network-level report (multisite) |
+
+### Reading Data (Bearer: client token)
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/sites` | List all sites with summary data |
+| GET | `/sites/{id}` | Full report for a single site |
+| GET | `/plugins` | Cross-site plugin overview |
+| GET | `/themes` | Cross-site theme overview |
+| GET | `/networks` | List all multisite networks |
+| GET | `/networks/{id}` | Full network detail with subsites |
+
+Optional query parameters on `/plugins` and `/themes`: `?slug=<slug>`, `?outdated=true`.
 
 ## Development
 
@@ -66,6 +95,14 @@ composer cs          # Check coding standards
 composer cs:fix      # Auto-fix coding standards
 ```
 
+### DDEV
+
+```bash
+ddev start
+```
+
+The hub is available at `https://site-bookkeeper-hub.ddev.site`.
+
 ## License
 
-MIT
+[GPL-2.0-or-later](LICENSE)
