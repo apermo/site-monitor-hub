@@ -359,7 +359,9 @@ function build_vuln_manager( Database $database ): VulnerabilityManager {
  */
 function build_vuln_provider( string $name, VulnerabilityRepository $vuln_repo ): ?VulnerabilityProvider {
 	if ( $name === 'wordfence' ) {
-		return new WordfenceProvider( $vuln_repo );
+		$wordfence_key = getenv( 'WORDFENCE_API_KEY' ) ?: null;
+
+		return new WordfenceProvider( $vuln_repo, $wordfence_key );
 	}
 
 	if ( $name === 'wpscan' ) {

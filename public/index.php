@@ -67,7 +67,8 @@ if ( $vuln_providers !== [] ) {
 	foreach ( $vuln_providers as $provider_name ) {
 		$provider_name = trim( $provider_name );
 		if ( $provider_name === 'wordfence' ) {
-			$vuln_manager->addProvider( new WordfenceProvider( $vuln_repo ) );
+			$wordfence_key = getenv( 'WORDFENCE_API_KEY' ) ?: null;
+			$vuln_manager->addProvider( new WordfenceProvider( $vuln_repo, $wordfence_key ) );
 		}
 		$wpscan_key = (string) getenv( 'WPSCAN_API_KEY' );
 		if ( $provider_name === 'wpscan' && $wpscan_key !== '' ) {
