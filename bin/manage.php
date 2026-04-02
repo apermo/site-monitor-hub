@@ -402,9 +402,14 @@ function handle_vuln_sync( Database $database, array $arguments ): void {
 
 	if ( $target !== null ) {
 		echo "Syncing provider: {$target}\n";
-		if ( ! $manager->syncProvider( $target ) ) {
-			fwrite( STDERR, "Unknown provider: {$target}\n" );
-			fwrite( STDERR, 'Configured: ' . implode( ', ', $names ) . "\n" );
+		try {
+			if ( ! $manager->syncProvider( $target ) ) {
+				fwrite( STDERR, "Unknown provider: {$target}\n" );
+				fwrite( STDERR, 'Configured: ' . implode( ', ', $names ) . "\n" );
+				exit( 1 );
+			}
+		} catch ( Throwable $error ) {
+			fwrite( STDERR, "Error: {$error->getMessage()}\n" );
 			exit( 1 );
 		}
 		echo "Done.\n";
@@ -412,7 +417,15 @@ function handle_vuln_sync( Database $database, array $arguments ): void {
 	}
 
 	echo 'Syncing all providers: ' . implode( ', ', $names ) . "\n";
-	$manager->syncAll();
+	foreach ( $names as $name ) {
+		echo "  {$name}... ";
+		try {
+			$manager->syncProvider( $name );
+			echo "ok\n";
+		} catch ( Throwable $error ) {
+			echo "FAILED: {$error->getMessage()}\n";
+		}
+	}
 	echo "Done.\n";
 }
 
