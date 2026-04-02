@@ -34,6 +34,10 @@
 				"wp_update_available": {
 					"type": ["string", "null"],
 					"description": "Available WordPress update version, or null if up to date."
+				},
+				"environment_type": {
+					"type": ["string", "null"],
+					"description": "WordPress environment type (production, staging, development, local)."
 				}
 			},
 			"additionalProperties": true

@@ -84,7 +84,8 @@ if ( $vuln_providers !== [] ) {
 	}
 }
 
-$report_handler = new ReportHandler( $repo, $token_auth, $network_auth );
+$accepted_envs = array_filter( array_map( 'trim', explode( ',', (string) getenv( 'ACCEPTED_ENVIRONMENTS' ) ) ) );
+$report_handler = new ReportHandler( $repo, $token_auth, $network_auth, $accepted_envs );
 $network_report_handler = new NetworkReportHandler( $network_repo, $network_auth );
 $sites_handler = new SitesHandler( $repo, $client_auth, $stale_hours );
 $site_handler = new SiteHandler( $repo, $client_auth, $stale_hours );

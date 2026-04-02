@@ -77,6 +77,7 @@ class Database {
 			$this->createVulnerabilitySlugSyncTable();
 			$this->migrateSitesAddNetworkId();
 			$this->migrateSitePluginsAddNetworkActive();
+			$this->migrateReportsAddEnvironmentType();
 
 			$this->connection->commit();
 		} catch ( Throwable $exception ) {
@@ -416,6 +417,22 @@ class Database {
 		try {
 			$this->connection->exec(
 				'ALTER TABLE site_plugins ADD COLUMN network_active INTEGER NOT NULL DEFAULT 0',
+			);
+			// phpcs:ignore Generic.CodeAnalysis.EmptyStatement.DetectedCatch -- Expected when column already exists.
+		} catch ( Throwable $exception ) {
+			// Column already exists — safe to ignore.
+		}
+	}
+
+	/**
+	 * Add environment_type column to reports table.
+	 *
+	 * @return void
+	 */
+	private function migrateReportsAddEnvironmentType(): void {
+		try {
+			$this->connection->exec(
+				'ALTER TABLE reports ADD COLUMN environment_type TEXT',
 			);
 			// phpcs:ignore Generic.CodeAnalysis.EmptyStatement.DetectedCatch -- Expected when column already exists.
 		} catch ( Throwable $exception ) {

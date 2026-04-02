@@ -37,16 +37,30 @@ class ReportHandler {
 	private ?NetworkAuth $networkAuth;
 
 	/**
+	 * Accepted environment types (empty = accept all).
+	 *
+	 * @var array<int, string>
+	 */
+	private array $acceptedEnvironments;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param SiteRepository   $repo        Repository.
-	 * @param TokenAuth        $auth        Token authenticator.
-	 * @param NetworkAuth|null $networkAuth Optional network authenticator.
+	 * @param SiteRepository     $repo                  Repository.
+	 * @param TokenAuth          $auth                  Token authenticator.
+	 * @param NetworkAuth|null   $networkAuth            Optional network authenticator.
+	 * @param array<int, string> $accepted_environments Allowed environment types.
 	 */
-	public function __construct( SiteRepository $repo, TokenAuth $auth, ?NetworkAuth $networkAuth = null ) {
+	public function __construct(
+		SiteRepository $repo,
+		TokenAuth $auth,
+		?NetworkAuth $networkAuth = null,
+		array $accepted_environments = [],
+	) {
 		$this->repo = $repo;
 		$this->auth = $auth;
 		$this->networkAuth = $networkAuth;
+		$this->acceptedEnvironments = $accepted_environments;
 	}
 
 	/**
@@ -80,6 +94,16 @@ class ReportHandler {
 			return;
 		}
 
+		if ( ! $this->isAcceptedEnvironment( $report ) ) {
+			$env_type = $report->environment['environment_type'] ?? 'unknown';
+			JsonResponse::error(
+				'forbidden',
+				"Environment type '{$env_type}' is not accepted.",
+				403,
+			);
+			return;
+		}
+
 		// Try site token auth first.
 		$site = $this->auth->authenticate( $token );
 
@@ -103,5 +127,22 @@ class ReportHandler {
 		$this->repo->upsertReport( $site->id, $report );
 
 		JsonResponse::send( [ 'status' => 'ok' ], 201 );
+	}
+
+	/**
+	 * Check whether the report's environment type is accepted.
+	 *
+	 * @param SiteReport $report Incoming report.
+	 *
+	 * @return bool True if accepted (or no filter configured).
+	 */
+	private function isAcceptedEnvironment( SiteReport $report ): bool {
+		if ( $this->acceptedEnvironments === [] ) {
+			return true;
+		}
+
+		$env_type = $report->environment['environment_type'] ?? '';
+
+		return \in_array( (string) $env_type, $this->acceptedEnvironments, true );
 	}
 }

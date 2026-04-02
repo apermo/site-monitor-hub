@@ -465,8 +465,8 @@ class SiteRepository {
 	 */
 	private function upsertReportRow( string $siteId, SiteReport $report, string $timestamp ): void {
 		$stmt = $this->database->pdo()->prepare(
-			'INSERT INTO reports (site_id, received_at, schema_version, payload, wp_version, php_version, wp_update_available, wp_version_last_updated, last_updated)
-			 VALUES (:site_id, :received_at, :schema_version, :payload, :wp_version, :php_version, :wp_update_available, :wp_version_last_updated, :last_updated)
+			'INSERT INTO reports (site_id, received_at, schema_version, payload, wp_version, php_version, wp_update_available, wp_version_last_updated, last_updated, environment_type)
+			 VALUES (:site_id, :received_at, :schema_version, :payload, :wp_version, :php_version, :wp_update_available, :wp_version_last_updated, :last_updated, :environment_type)
 			 ON CONFLICT(site_id) DO UPDATE SET
 				received_at = :received_at,
 				schema_version = :schema_version,
@@ -475,7 +475,8 @@ class SiteRepository {
 				php_version = :php_version,
 				wp_update_available = :wp_update_available,
 				wp_version_last_updated = :wp_version_last_updated,
-				last_updated = :last_updated',
+				last_updated = :last_updated,
+				environment_type = :environment_type',
 		);
 
 		$payload = \json_encode(
@@ -503,6 +504,7 @@ class SiteRepository {
 				':wp_update_available' => $report->environment['wp_update_available'] ?? null,
 				':wp_version_last_updated' => $timestamp,
 				':last_updated' => $timestamp,
+				':environment_type' => $report->environment['environment_type'] ?? null,
 			],
 		);
 	}

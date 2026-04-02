@@ -141,6 +141,7 @@ class SiteHandler {
 			'id' => $site->id,
 			'site_url' => $site->siteUrl,
 			'label' => $site->label,
+			'environment_type' => $report['environment_type'] ?? null,
 			'wp_version' => $report['wp_version'] ?? null,
 			'wp_update_available' => $report['wp_update_available'] ?? null,
 			'php_version' => $report['php_version'] ?? null,

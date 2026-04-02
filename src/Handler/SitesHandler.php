@@ -111,6 +111,7 @@ class SitesHandler {
 			'site_url' => $site->siteUrl,
 			'label' => $site->label,
 			'network_id' => $site->networkId,
+			'environment_type' => $report['environment_type'] ?? null,
 			'wp_version' => $report['wp_version'] ?? null,
 			'wp_update_available' => $report['wp_update_available'] ?? null,
 			'php_version' => $report['php_version'] ?? null,
