@@ -25,6 +25,10 @@ use Apermo\SiteBookkeeperHub\Router;
 use Apermo\SiteBookkeeperHub\Storage\Database;
 use Apermo\SiteBookkeeperHub\Storage\NetworkRepository;
 use Apermo\SiteBookkeeperHub\Storage\SiteRepository;
+use Apermo\SiteBookkeeperHub\Vulnerability\VulnerabilityManager;
+use Apermo\SiteBookkeeperHub\Vulnerability\VulnerabilityRepository;
+use Apermo\SiteBookkeeperHub\Vulnerability\WordfenceProvider;
+use Apermo\SiteBookkeeperHub\Vulnerability\WPScanProvider;
 
 // Load .env if it exists.
 $env_file = __DIR__ . '/../.env';
@@ -53,12 +57,31 @@ $network_repo = new NetworkRepository( $database );
 $token_auth = new TokenAuth( $database );
 $network_auth = new NetworkAuth( $database );
 $client_auth = new ClientAuth( $database );
+
+// Vulnerability providers.
+$vuln_repo = new VulnerabilityRepository( $database );
+$vuln_manager = null;
+$vuln_providers = array_filter( explode( ',', (string) getenv( 'VULN_PROVIDERS' ) ) );
+if ( $vuln_providers !== [] ) {
+	$vuln_manager = new VulnerabilityManager( $vuln_repo );
+	foreach ( $vuln_providers as $provider_name ) {
+		$provider_name = trim( $provider_name );
+		if ( $provider_name === 'wordfence' ) {
+			$vuln_manager->addProvider( new WordfenceProvider( $vuln_repo ) );
+		}
+		$wpscan_key = (string) getenv( 'WPSCAN_API_KEY' );
+		if ( $provider_name === 'wpscan' && $wpscan_key !== '' ) {
+			$vuln_manager->addProvider( new WPScanProvider( $vuln_repo, $wpscan_key ) );
+		}
+	}
+}
+
 $report_handler = new ReportHandler( $repo, $token_auth, $network_auth );
 $network_report_handler = new NetworkReportHandler( $network_repo, $network_auth );
 $sites_handler = new SitesHandler( $repo, $client_auth, $stale_hours );
 $site_handler = new SiteHandler( $repo, $client_auth, $stale_hours );
-$plugins_handler = new PluginsHandler( $repo, $client_auth );
-$themes_handler = new ThemesHandler( $repo, $client_auth );
+$plugins_handler = new PluginsHandler( $repo, $client_auth, $vuln_manager );
+$themes_handler = new ThemesHandler( $repo, $client_auth, $vuln_manager );
 $networks_handler = new NetworksHandler( $network_repo, $client_auth );
 $network_handler = new NetworkHandler( $network_repo, $repo, $client_auth );
 

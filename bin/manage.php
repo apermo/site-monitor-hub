@@ -10,6 +10,7 @@
  *   network:add <url> [--label=<label>]    Register a new network
  *   network:list                           List all registered networks
  *   network:rotate-token <url>             Rotate a network's bearer token
+ *   vuln:sync [provider]                   Sync vulnerability data
  *
  * @phpcs:disable WordPress.PHP.DevelopmentFunctions.error_log_error_log
  */
@@ -21,6 +22,10 @@ require_once __DIR__ . '/../vendor/autoload.php';
 use Apermo\SiteBookkeeperHub\Storage\Database;
 use Apermo\SiteBookkeeperHub\Storage\NetworkRepository;
 use Apermo\SiteBookkeeperHub\Storage\SiteRepository;
+use Apermo\SiteBookkeeperHub\Vulnerability\VulnerabilityManager;
+use Apermo\SiteBookkeeperHub\Vulnerability\VulnerabilityRepository;
+use Apermo\SiteBookkeeperHub\Vulnerability\WordfenceProvider;
+use Apermo\SiteBookkeeperHub\Vulnerability\WPScanProvider;
 
 // Load .env if it exists.
 $env_file = __DIR__ . '/../.env';
@@ -65,6 +70,9 @@ switch ( $command ) {
 	case 'network:rotate-token':
 		handle_network_rotate_token( $network_repo, array_slice( $argv, 2 ) );
 		break;
+	case 'vuln:sync':
+		handle_vuln_sync( $database, array_slice( $argv, 2 ) );
+		break;
 	default:
 		fwrite( STDERR, "Usage: php bin/manage.php <command>\n\n" );
 		fwrite( STDERR, "Commands:\n" );
@@ -75,6 +83,7 @@ switch ( $command ) {
 		fwrite( STDERR, "  network:add <url> [--label=<label>]\n" );
 		fwrite( STDERR, "  network:list\n" );
 		fwrite( STDERR, "  network:rotate-token <url>\n" );
+		fwrite( STDERR, "  vuln:sync [provider]\n" );
 		exit( 1 );
 }
 
@@ -315,6 +324,69 @@ function handle_network_rotate_token( NetworkRepository $repo, array $arguments 
 	echo "Token rotated for {$url}.\n";
 	echo "\nNew bearer token (save this — it cannot be retrieved later):\n";
 	echo "{$token}\n";
+}
+
+/**
+ * Build a VulnerabilityManager with configured providers.
+ *
+ * @param Database $database Database connection.
+ *
+ * @return VulnerabilityManager
+ */
+function build_vuln_manager( Database $database ): VulnerabilityManager {
+	$vuln_repo = new VulnerabilityRepository( $database );
+	$manager = new VulnerabilityManager( $vuln_repo );
+
+	$providers = array_filter( explode( ',', (string) getenv( 'VULN_PROVIDERS' ) ) );
+
+	foreach ( $providers as $name ) {
+		$name = trim( $name );
+		if ( $name === 'wordfence' ) {
+			$manager->addProvider( new WordfenceProvider( $vuln_repo ) );
+		}
+		$wpscan_key = (string) getenv( 'WPSCAN_API_KEY' );
+		if ( $name === 'wpscan' && $wpscan_key !== '' ) {
+			$manager->addProvider( new WPScanProvider( $vuln_repo, $wpscan_key ) );
+		}
+	}
+
+	return $manager;
+}
+
+/**
+ * Sync vulnerability data from configured providers.
+ *
+ * @param Database           $database  Database connection.
+ * @param array<int, string> $arguments CLI arguments.
+ *
+ * @return void
+ */
+function handle_vuln_sync( Database $database, array $arguments ): void {
+	$manager = build_vuln_manager( $database );
+	$names = $manager->getProviderNames();
+
+	if ( $names === [] ) {
+		fwrite( STDERR, "No vulnerability providers configured.\n" );
+		fwrite( STDERR, "Set VULN_PROVIDERS in your .env (e.g. VULN_PROVIDERS=wordfence,wpscan).\n" );
+		exit( 1 );
+	}
+
+	$target = $arguments[0] ?? null;
+
+	if ( $target !== null ) {
+		echo "Syncing provider: {$target}\n";
+		if ( ! $manager->syncProvider( $target ) ) {
+			fwrite( STDERR, "Unknown provider: {$target}\n" );
+			fwrite( STDERR, 'Configured: ' . implode( ', ', $names ) . "\n" );
+			exit( 1 );
+		}
+		echo "Done.\n";
+		return;
+	}
+
+	echo 'Syncing all providers: ' . implode( ', ', $names ) . "\n";
+	$manager->syncAll();
+	echo "Done.\n";
 }
 
 /**

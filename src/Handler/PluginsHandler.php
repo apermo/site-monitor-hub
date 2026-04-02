@@ -7,6 +7,7 @@ namespace Apermo\SiteBookkeeperHub\Handler;
 use Apermo\SiteBookkeeperHub\Auth\ClientAuth;
 use Apermo\SiteBookkeeperHub\JsonResponse;
 use Apermo\SiteBookkeeperHub\Storage\SiteRepository;
+use Apermo\SiteBookkeeperHub\Vulnerability\VulnerabilityManager;
 
 /**
  * Handles GET /plugins — cross-site plugin report.
@@ -28,14 +29,27 @@ class PluginsHandler {
 	private ClientAuth $auth;
 
 	/**
+	 * Vulnerability manager (optional).
+	 *
+	 * @var VulnerabilityManager|null
+	 */
+	private ?VulnerabilityManager $vulnManager;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param SiteRepository $repo Repository.
-	 * @param ClientAuth     $auth Client authenticator.
+	 * @param SiteRepository            $repo         Repository.
+	 * @param ClientAuth                $auth         Client authenticator.
+	 * @param VulnerabilityManager|null $vuln_manager Vulnerability manager.
 	 */
-	public function __construct( SiteRepository $repo, ClientAuth $auth ) {
+	public function __construct(
+		SiteRepository $repo,
+		ClientAuth $auth,
+		?VulnerabilityManager $vuln_manager = null,
+	) {
 		$this->repo = $repo;
 		$this->auth = $auth;
+		$this->vulnManager = $vuln_manager;
 	}
 
 	/**
@@ -45,7 +59,7 @@ class PluginsHandler {
 	 *
 	 * @return array<int, array<string, mixed>>
 	 */
-	private static function groupBySlug( array $rows ): array {
+	private function groupBySlug( array $rows ): array {
 		$grouped = [];
 
 		foreach ( $rows as $row ) {
@@ -58,8 +72,7 @@ class PluginsHandler {
 				];
 			}
 
-			// phpcs:ignore Apermo.DataStructures.ArrayComplexity.TooManyKeysError -- API contract requires 7 keys.
-			$grouped[ $slug ]['sites'][] = [
+			$site_entry = [
 				'site_id' => $row['site_id'],
 				'site_url' => $row['site_url'],
 				'label' => $row['site_label'] ?? null,
@@ -69,6 +82,15 @@ class PluginsHandler {
 				'network_active' => $row['network_active'] ?? 0,
 				'last_updated' => $row['last_updated'],
 			];
+
+			if ( $this->vulnManager !== null ) {
+				$vulns = $this->vulnManager->lookup( $slug, $row['version'], 'plugin' );
+				$site_entry['vulnerabilities'] = $vulns;
+				$site_entry['security_update'] = $vulns !== [];
+			}
+
+			// phpcs:ignore Apermo.DataStructures.ArrayComplexity.TooManyKeysError -- API contract.
+			$grouped[ $slug ]['sites'][] = $site_entry;
 		}
 
 		return \array_values( $grouped );
@@ -95,6 +117,6 @@ class PluginsHandler {
 
 		$rows = $this->repo->getAllPlugins( $slug, $outdated );
 
-		JsonResponse::send( [ 'plugins' => self::groupBySlug( $rows ) ] );
+		JsonResponse::send( [ 'plugins' => $this->groupBySlug( $rows ) ] );
 	}
 }

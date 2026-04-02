@@ -72,6 +72,8 @@ class Database {
 			$this->createNetworkReportsTable();
 			$this->createNetworkPluginsTable();
 			$this->createNetworkUsersTable();
+			$this->createVulnerabilitiesTable();
+			$this->createVulnerabilitySyncTable();
 			$this->migrateSitesAddNetworkId();
 			$this->migrateSitePluginsAddNetworkActive();
 
@@ -323,6 +325,47 @@ class Database {
 				display_name TEXT NOT NULL,
 				email TEXT NOT NULL,
 				PRIMARY KEY (network_id, user_login)
+			)',
+		);
+	}
+
+	/**
+	 * Create the vulnerabilities table for cached provider data.
+	 *
+	 * @return void
+	 */
+	private function createVulnerabilitiesTable(): void {
+		$this->connection->exec(
+			'CREATE TABLE IF NOT EXISTS vulnerabilities (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				provider TEXT NOT NULL,
+				type TEXT NOT NULL,
+				slug TEXT NOT NULL,
+				external_id TEXT NOT NULL,
+				title TEXT NOT NULL,
+				from_version TEXT,
+				to_version TEXT,
+				from_inclusive INTEGER NOT NULL DEFAULT 1,
+				to_inclusive INTEGER NOT NULL DEFAULT 1,
+				fixed_in TEXT,
+				cvss_score REAL,
+				cve TEXT,
+				synced_at TEXT NOT NULL,
+				UNIQUE(provider, external_id, slug)
+			)',
+		);
+	}
+
+	/**
+	 * Create the vulnerability sync tracking table.
+	 *
+	 * @return void
+	 */
+	private function createVulnerabilitySyncTable(): void {
+		$this->connection->exec(
+			'CREATE TABLE IF NOT EXISTS vulnerability_sync (
+				provider TEXT PRIMARY KEY,
+				last_sync_at TEXT NOT NULL
 			)',
 		);
 	}
