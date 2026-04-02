@@ -340,17 +340,41 @@ function build_vuln_manager( Database $database ): VulnerabilityManager {
 	$providers = array_filter( explode( ',', (string) getenv( 'VULN_PROVIDERS' ) ) );
 
 	foreach ( $providers as $name ) {
-		$name = trim( $name );
-		if ( $name === 'wordfence' ) {
-			$manager->addProvider( new WordfenceProvider( $vuln_repo ) );
-		}
-		$wpscan_key = (string) getenv( 'WPSCAN_API_KEY' );
-		if ( $name === 'wpscan' && $wpscan_key !== '' ) {
-			$manager->addProvider( new WPScanProvider( $vuln_repo, $wpscan_key ) );
+		$provider = build_vuln_provider( trim( $name ), $vuln_repo );
+		if ( $provider !== null ) {
+			$manager->addProvider( $provider );
 		}
 	}
 
 	return $manager;
+}
+
+/**
+ * Build a single vulnerability provider by name.
+ *
+ * @param string                  $name      Provider name.
+ * @param VulnerabilityRepository $vuln_repo Repository instance.
+ *
+ * @return VulnerabilityProvider|null
+ */
+function build_vuln_provider( string $name, VulnerabilityRepository $vuln_repo ): ?VulnerabilityProvider {
+	if ( $name === 'wordfence' ) {
+		return new WordfenceProvider( $vuln_repo );
+	}
+
+	if ( $name === 'wpscan' ) {
+		$wpscan_key = (string) getenv( 'WPSCAN_API_KEY' );
+		if ( $wpscan_key === '' ) {
+			return null;
+		}
+		$wpscan_hours = (int) ( getenv( 'WPSCAN_SYNC_HOURS' ) ?: 24 );
+		$wpscan_include = getenv( 'WPSCAN_SLUG_INCLUDE' ) ?: null;
+		$wpscan_exclude = getenv( 'WPSCAN_SLUG_EXCLUDE' ) ?: null;
+
+		return new WPScanProvider( $vuln_repo, $wpscan_key, $wpscan_hours, $wpscan_include, $wpscan_exclude );
+	}
+
+	return null;
 }
 
 /**

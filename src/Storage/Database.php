@@ -74,6 +74,7 @@ class Database {
 			$this->createNetworkUsersTable();
 			$this->createVulnerabilitiesTable();
 			$this->createVulnerabilitySyncTable();
+			$this->createVulnerabilitySlugSyncTable();
 			$this->migrateSitesAddNetworkId();
 			$this->migrateSitePluginsAddNetworkActive();
 
@@ -366,6 +367,26 @@ class Database {
 			'CREATE TABLE IF NOT EXISTS vulnerability_sync (
 				provider TEXT PRIMARY KEY,
 				last_sync_at TEXT NOT NULL
+			)',
+		);
+	}
+
+	/**
+	 * Create the per-slug sync tracking table.
+	 *
+	 * Tracks when each provider last checked a given slug,
+	 * preventing repeated API calls for unknown or clean slugs.
+	 *
+	 * @return void
+	 */
+	private function createVulnerabilitySlugSyncTable(): void {
+		$this->connection->exec(
+			'CREATE TABLE IF NOT EXISTS vulnerability_slug_sync (
+				provider TEXT NOT NULL,
+				slug TEXT NOT NULL,
+				type TEXT NOT NULL,
+				checked_at TEXT NOT NULL,
+				PRIMARY KEY (provider, slug, type)
 			)',
 		);
 	}

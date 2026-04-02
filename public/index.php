@@ -71,7 +71,12 @@ if ( $vuln_providers !== [] ) {
 		}
 		$wpscan_key = (string) getenv( 'WPSCAN_API_KEY' );
 		if ( $provider_name === 'wpscan' && $wpscan_key !== '' ) {
-			$vuln_manager->addProvider( new WPScanProvider( $vuln_repo, $wpscan_key ) );
+			$wpscan_hours = (int) ( getenv( 'WPSCAN_SYNC_HOURS' ) ?: 24 );
+			$wpscan_include = getenv( 'WPSCAN_SLUG_INCLUDE' ) ?: null;
+			$wpscan_exclude = getenv( 'WPSCAN_SLUG_EXCLUDE' ) ?: null;
+			$vuln_manager->addProvider(
+				new WPScanProvider( $vuln_repo, $wpscan_key, $wpscan_hours, $wpscan_include, $wpscan_exclude ),
+			);
 		}
 	}
 }
