@@ -18,6 +18,7 @@ class Site {
 	 * @param string|null $label     Human-readable label.
 	 * @param string      $createdAt ISO 8601 creation timestamp.
 	 * @param string      $updatedAt ISO 8601 last-update timestamp.
+	 * @param string|null $networkId Optional network UUID.
 	 */
 	public function __construct(
 		public readonly string $id,
@@ -26,6 +27,7 @@ class Site {
 		public readonly ?string $label,
 		public readonly string $createdAt,
 		public readonly string $updatedAt,
+		public readonly ?string $networkId = null,
 	) {
 	}
 
@@ -44,6 +46,7 @@ class Site {
 			label: $row['label'] ?? null,
 			createdAt: (string) $row['created_at'],
 			updatedAt: (string) $row['updated_at'],
+			networkId: $row['network_id'] ?? null,
 		);
 	}
 }

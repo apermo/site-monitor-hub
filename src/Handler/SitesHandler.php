@@ -105,11 +105,12 @@ class SitesHandler {
 		$lastSeen = $report['last_updated'] ?? $site->updatedAt;
 		$isStale = \strtotime( $lastSeen ) < $staleThreshold;
 
-		// phpcs:ignore Apermo.DataStructures.ArrayComplexity.TooManyKeysError -- API contract requires 11 keys.
+		// phpcs:ignore Apermo.DataStructures.ArrayComplexity.TooManyKeysError -- API contract requires 12 keys.
 		return [
 			'id' => $site->id,
 			'site_url' => $site->siteUrl,
 			'label' => $site->label,
+			'network_id' => $site->networkId,
 			'wp_version' => $report['wp_version'] ?? null,
 			'wp_update_available' => $report['wp_update_available'] ?? null,
 			'php_version' => $report['php_version'] ?? null,

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Apermo\SiteBookkeeperHub\Handler;
 
+use Apermo\SiteBookkeeperHub\Auth\NetworkAuth;
 use Apermo\SiteBookkeeperHub\Auth\TokenAuth;
 use Apermo\SiteBookkeeperHub\JsonResponse;
 use Apermo\SiteBookkeeperHub\Model\SiteReport;
@@ -29,14 +30,23 @@ class ReportHandler {
 	private TokenAuth $auth;
 
 	/**
+	 * Optional network authenticator for multisite fallback.
+	 *
+	 * @var NetworkAuth|null
+	 */
+	private ?NetworkAuth $networkAuth;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param SiteRepository $repo Repository.
-	 * @param TokenAuth      $auth Token authenticator.
+	 * @param SiteRepository   $repo        Repository.
+	 * @param TokenAuth        $auth        Token authenticator.
+	 * @param NetworkAuth|null $networkAuth Optional network authenticator.
 	 */
-	public function __construct( SiteRepository $repo, TokenAuth $auth ) {
+	public function __construct( SiteRepository $repo, TokenAuth $auth, ?NetworkAuth $networkAuth = null ) {
 		$this->repo = $repo;
 		$this->auth = $auth;
+		$this->networkAuth = $networkAuth;
 	}
 
 	/**
@@ -55,12 +65,6 @@ class ReportHandler {
 			return;
 		}
 
-		$site = $this->auth->authenticate( $token );
-		if ( $site === null ) {
-			JsonResponse::error( 'unauthorized', 'Invalid token.', 401 );
-			return;
-		}
-
 		$body = \file_get_contents( 'php://input' );
 		$data = \json_decode( $body, true );
 
@@ -73,6 +77,26 @@ class ReportHandler {
 
 		if ( $report->siteUrl === '' ) {
 			JsonResponse::error( 'bad_request', 'Missing site_url.', 400 );
+			return;
+		}
+
+		// Try site token auth first.
+		$site = $this->auth->authenticate( $token );
+
+		// Fall back to network auth if site auth fails.
+		if ( $site === null && $this->networkAuth !== null ) {
+			$network = $this->networkAuth->authenticate( $token );
+			if ( $network !== null ) {
+				$site = $this->repo->findOrCreateSiteForNetwork(
+					$network->id,
+					$report->siteUrl,
+					$network->tokenHash,
+				);
+			}
+		}
+
+		if ( $site === null ) {
+			JsonResponse::error( 'unauthorized', 'Invalid token.', 401 );
 			return;
 		}
 
