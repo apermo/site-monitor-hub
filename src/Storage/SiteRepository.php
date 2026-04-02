@@ -306,7 +306,7 @@ class SiteRepository {
 			$params[':slug'] = $slug;
 		}
 		if ( $outdated ) {
-			$where[] = 'sp.update_available IS NOT NULL';
+			$where[] = "sp.update_available IS NOT NULL AND sp.update_available != ''";
 		}
 		if ( $where !== [] ) {
 			$query .= ' WHERE ' . \implode( ' AND ', $where );
@@ -339,7 +339,7 @@ class SiteRepository {
 			$params[':slug'] = $slug;
 		}
 		if ( $outdated ) {
-			$where[] = 'st.update_available IS NOT NULL';
+			$where[] = "st.update_available IS NOT NULL AND st.update_available != ''";
 		}
 		if ( $where !== [] ) {
 			$query .= ' WHERE ' . \implode( ' AND ', $where );
